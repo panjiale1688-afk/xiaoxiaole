@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#07120d">
+<title>贪吃蛇 · Snake</title>
+<style>
+:root{--bg:#07120d;--panel:#0e1e16;--line:#1c3b2b;--green:#5ee27c;--green2:#22c55e;--text:#effff2;--muted:#9ab5a2;--gold:#ffd166;--red:#ff647c}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:radial-gradient(circle at 50% -10%,#16452b 0,#0b2116 35%,#050b08 80%);overflow-x:hidden}body{min-height:100dvh;display:grid;place-items:center;padding:16px}.game{width:min(94vw,560px)}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}.title h1{margin:0;font-size:clamp(30px,8vw,44px);line-height:1;text-shadow:0 5px 25px #0008}.title p{margin:7px 0 0;color:var(--muted);font-size:12px}.actions{display:flex;gap:8px}.icon{width:43px;height:43px;border:1px solid #ffffff12;border-radius:14px;background:#ffffff0c;color:#fff;font-size:19px;cursor:pointer}.icon:active,.btn:active,.control:active{transform:scale(.95)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:10px}.stat{padding:8px 5px;border:1px solid #ffffff10;border-radius:14px;background:#ffffff08;text-align:center}.stat b{display:block;font-size:20px}.stat span{color:var(--muted);font-size:10px}
+.board-wrap{position:relative;padding:8px;border-radius:23px;background:linear-gradient(145deg,#ffffff12,#00000035);border:1px solid #ffffff12;box-shadow:0 25px 70px #0009}.board-wrap::after{content:"";position:absolute;inset:8px;border-radius:16px;box-shadow:inset 0 0 40px #0008;pointer-events:none}.canvas-box{position:relative;border-radius:16px;overflow:hidden;touch-action:none;background:#08130d}canvas{display:block;width:100%;height:auto;aspect-ratio:1}
+.message{text-align:center;min-height:25px;margin:9px 0;color:#dfffe5;font-weight:800;font-size:13px}.tip{text-align:center;color:#76927f;font-size:11px;margin-bottom:12px}.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;width:min(240px,70vw);margin:auto}.control{aspect-ratio:1.3;border:1px solid #ffffff10;border-radius:14px;background:#ffffff0a;color:#eaffed;font-size:23px;cursor:pointer}.up{grid-column:2}.down{grid-column:2}.left{grid-column:1;grid-row:2}.right{grid-column:3;grid-row:2}
+.overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:20px;background:#020805c9;backdrop-filter:blur(13px);transition:opacity .2s}.overlay.hidden{opacity:0;pointer-events:none}.modal{width:min(92vw,420px);padding:27px;border:1px solid #ffffff15;border-radius:27px;background:linear-gradient(160deg,#122b1e,#0a1710);box-shadow:0 30px 90px #000b;text-align:center}.emoji{font-size:64px}.modal h2{margin:8px 0;font-size:30px}.modal p{color:var(--muted);font-size:14px}.score-big{font-size:45px;font-weight:1000;color:var(--gold);margin:8px}.btn{width:100%;padding:13px;border:0;border-radius:14px;margin-top:8px;color:#fff;font-weight:900;font-size:15px;cursor:pointer}.primary{background:linear-gradient(135deg,#16a34a,#65e57c);color:#06120a;box-shadow:0 10px 25px #22c55e33}.secondary{background:#ffffff0c;border:1px solid #ffffff12}.range{margin-top:13px;color:var(--muted);font-size:12px}.range input{width:100%;accent-color:var(--green)}
+@keyframes pulse{50%{transform:scale(1.04)}}.eat{animation:pulse .18s ease}
+@media(max-width:430px){body{padding:10px}.stats{gap:5px}.stat b{font-size:18px}.board-wrap{padding:6px}.board-wrap::after{inset:6px}.title h1{font-size:31px}}
+</style>
+</head>
+<body>
+<main class="game">
+<header><div class="title"><h1>🐍 贪吃蛇</h1><p>吃掉食物，越来越长，挑战你的最高分！</p></div><div class="actions"><button class="icon" id="soundBtn" aria-label="声音">🔊</button><button class="icon" id="pauseBtn" aria-label="暂停">⏸️</button></div></header>
+<section class="stats"><div class="stat"><b id="score">0</b><span>得分</span></div><div class="stat"><b id="best">0</b><span>最高分</span></div><div class="stat"><b id="level">1</b><span>等级</span></div><div class="stat"><b id="length">3</b><span>长度</span></div></section>
+<div class="board-wrap"><div class="canvas-box"><canvas id="canvas" width="480" height="480"></canvas></div></div>
+<div class="message" id="message">按方向键开始，或点击下方按钮</div><div class="tip">电脑：方向键 / WASD　手机：滑动棋盘或点击方向键</div>
+<div class="controls"><button class="control up" data-dir="up">▲</button><button class="control left" data-dir="left">◀</button><button class="control right" data-dir="right">▶</button><button class="control down" data-dir="down">▼</button></div>
+</main>
+<div class="overlay" id="startOverlay"><div class="modal"><div class="emoji">🐍</div><h2>贪吃蛇</h2><p>吃掉 🍎，身体会越来越长。撞墙或撞到自己就结束！</p><button class="btn primary" id="startBtn">开始游戏 ▶</button><button class="btn secondary" id="helpBtn">玩法说明</button><div class="range">速度：<input id="speedRange" type="range" min="1" max="5" value="3"></div></div></div>
+<div class="overlay hidden" id="pauseOverlay"><div class="modal"><div class="emoji">⏸️</div><h2>游戏暂停</h2><p>休息一下，准备好了继续挑战。</p><button class="btn primary" id="resumeBtn">继续游戏 ▶</button><button class="btn secondary" id="restartBtn">重新开始</button></div></div>
+<div class="overlay hidden" id="overOverlay"><div class="modal"><div class="emoji" id="overEmoji">💥</div><h2 id="overTitle">游戏结束</h2><p>本局得分</p><div class="score-big" id="overScore">0</div><p id="overBest"></p><button class="btn primary" id="againBtn">再来一局 🔥</button><button class="btn secondary" id="backBtn">返回首页</button></div></div>
+<script>
+(()=>{
+const N=20, canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id); const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let snake=[],food=null,dir={x:1,y:0},nextDir={x:1,y:0},score=0,best=Number(localStorage.getItem('snake-best')||0),running=false,paused=false,started=false,gameTimer=null,soundOn=localStorage.getItem('snake-sound')!=='off',speed=3,swipeStart=null;
+const speeds={1:190,2:155,3:125,4:95,5:70};
+function beep(freq=520,dur=.06,type='sine',gain=.025){if(!soundOn)return;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;window.__snakeAudio=window.__snakeAudio||new A();const o=window.__snakeAudio.createOscillator(),g=window.__snakeAudio.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(gain,window.__snakeAudio.currentTime);g.gain.exponentialRampToValueAtTime(.001,window.__snakeAudio.currentTime+dur);o.connect(g);g.connect(window.__snakeAudio.destination);o.start();o.stop(window.__snakeAudio.currentTime+dur)}catch(e){}}
+function reset(){snake=[{x:9,y:10},{x:8,y:10},{x:7,y:10}];dir={x:1,y:0};nextDir={x:1,y:0};score=0;food=spawnFood();updateStats();draw();$('message').textContent='准备好了，出发！'}
+function spawnFood(){let p;do{p={x:Math.floor(Math.random()*N),y:Math.floor(Math.random()*N)}}while(snake.some(s=>s.x===p.x&&s.y===p.y));return p}
+function updateStats(){$('score').textContent=score;$('best').textContent=Math.max(score,best);$('level').textContent=Math.min(9,1+Math.floor(score/50));$('length').textContent=snake.length}
+function setDirection(name){if(!started||paused)return;const d={up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}}[name];if(!d)return;if(d.x===-dir.x&&d.y===-dir.y)return; if(d.x===-nextDir.x&&d.y===-nextDir.y)return;nextDir=d;if(!running)startLoop();}
+function tick(){if(!running||paused)return;dir=nextDir;const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};if(head.x<0||head.x>=N||head.y<0||head.y>=N||snake.some((s,i)=>i>0&&s.x===head.x&&s.y===head.y)){gameOver();return}snake.unshift(head);if(head.x===food.x&&head.y===food.y){score+=10;beep(720,.07,'square',.035);food=spawnFood();$('message').textContent=score>=100?'🔥 太快了！继续冲！':'🍎 吃到了！';}else snake.pop();if(score>best){best=score;localStorage.setItem('snake-best',best)}updateStats();draw();}
+function startLoop(){running=true;started=true;paused=false;clearInterval(gameTimer);gameTimer=setInterval(tick,Math.max(55,speeds[speed]-Math.min(55,Math.floor(score/100)*8)));$('message').textContent='小心别撞到自己！';beep(440,.04)}
+function stopLoop(){running=false;clearInterval(gameTimer);gameTimer=null}
+function gameOver(){stopLoop();started=false;beep(180,.18,'sawtooth',.04);$('overScore').textContent=score;$('overBest').textContent=score>=best?'🏆 新纪录！':'最高分：'+best;$('overEmoji').textContent=score>=200?'👑':score>=100?'🔥':'💥';$('overTitle').textContent=score>=200?'蛇王诞生！': '游戏结束';$('overOverlay').classList.remove('hidden')}
+function draw(){const W=canvas.width,S=W/N;ctx.clearRect(0,0,W,W);ctx.fillStyle='#08130d';ctx.fillRect(0,0,W,W);ctx.strokeStyle='#10271a';ctx.lineWidth=1;for(let i=1;i<N;i++){ctx.beginPath();ctx.moveTo(i*S,0);ctx.lineTo(i*S,W);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*S);ctx.lineTo(W,i*S);ctx.stroke()}
+// food
+ctx.save();ctx.shadowColor='#ff5d73';ctx.shadowBlur=14;ctx.fillStyle='#ff536d';ctx.beginPath();ctx.arc((food.x+.5)*S,(food.y+.5)*S,S*.28,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffd1d8';ctx.beginPath();ctx.arc((food.x+.42)*S,(food.y+.42)*S,S*.08,0,Math.PI*2);ctx.fill();ctx.restore();
+// snake
+snake.forEach((s,i)=>{const pad=i?S*.11:S*.075,x=s.x*S+pad,y=s.y*S+pad,w=S-pad*2;ctx.save();ctx.shadowColor=i?'#22c55e':'#8aff9c';ctx.shadowBlur=i?5:12;const g=ctx.createLinearGradient(x,y,x+w,y+w);g.addColorStop(0,i?'#39d86b':'#b6ffc0');g.addColorStop(1,i?'#16843e':'#43c965');ctx.fillStyle=g;roundRect(x,y,w,w,S*.16);ctx.fill();if(i===0){ctx.fillStyle='#092010';let ex=x+w*.32,ey=y+w*.31;ctx.beginPath();ctx.arc(ex,ey,S*.055,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(x+w*.68,ey,S*.055,0,Math.PI*2);ctx.fill()}ctx.restore()});}
+function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function startGame(){speed=Number($('speedRange').value);$('startOverlay').classList.add('hidden');$('pauseOverlay').classList.add('hidden');$('overOverlay').classList.add('hidden');reset();started=true;running=false;paused=false;$('message').textContent='按方向键或滑动开始';}
+function pause(){if(!started)return;if(paused){resume();return}paused=true;clearInterval(gameTimer);gameTimer=null;$('pauseOverlay').classList.remove('hidden');}
+function resume(){if(!started)return;paused=false;$('pauseOverlay').classList.add('hidden');startLoop()}
+$('startBtn').onclick=startGame;$('againBtn').onclick=startGame;$('restartBtn').onclick=startGame;$('resumeBtn').onclick=resume;$('backBtn').onclick=()=>{$('overOverlay').classList.add('hidden');$('startOverlay').classList.remove('hidden');started=false;stopLoop();reset()};$('pauseBtn').onclick=pause;$('soundBtn').onclick=()=>{soundOn=!soundOn;localStorage.setItem('snake-sound',soundOn?'on':'off');$('soundBtn').textContent=soundOn?'🔊':'🔇';if(soundOn)beep()};$('soundBtn').textContent=soundOn?'🔊':'🔇';
+$('helpBtn').onclick=()=>alert('玩法：控制绿色小蛇吃红色食物。每吃一个 +10 分，蛇会变长并逐渐加速。撞墙或撞到自己就结束。电脑用方向键/WASD，手机可滑动棋盘或点击方向按钮。');
+document.addEventListener('keydown',e=>{const map={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',W:'up',s:'down',S:'down',a:'left',A:'left',d:'right',D:'right'};if(e.key===' '){e.preventDefault();pause();return}if(map[e.key]){e.preventDefault();if(!started&&!$('startOverlay').classList.contains('hidden'))return;setDirection(map[e.key])}});
+document.querySelectorAll('.control').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();setDirection(b.dataset.dir)}));canvas.addEventListener('pointerdown',e=>{swipeStart={x:e.clientX,y:e.clientY}});canvas.addEventListener('pointerup',e=>{if(!swipeStart)return;const dx=e.clientX-swipeStart.x,dy=e.clientY-swipeStart.y;swipeStart=null;if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;if(Math.abs(dx)>Math.abs(dy))setDirection(dx>0?'right':'left');else setDirection(dy>0?'down':'up')});
+reset();
+})();
+</script>
+</body>
+</html>
